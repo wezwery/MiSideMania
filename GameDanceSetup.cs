@@ -1,4 +1,5 @@
 using Il2Cpp;
+using Il2CppInterop.Runtime.Injection;
 using MelonLoader;
 using OsuParsers.Beatmaps.Objects.Mania;
 using OsuParsers.Decoders;
@@ -6,13 +7,19 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace MiSideMania
 {
-    public class GameDanceSetup
+    public class GameDanceSetup : MonoBehaviour
     {
+        private Text gameName = null!, customName = null!;
+        private Location7_GameDance game = null!;
+
         public static void Setup(string pathToMapsFolder, Location7_GameDance game)
         {
+            ClassInjector.RegisterTypeInIl2Cpp<GameDanceSetup>();
+
             // All .osu files
             var files = Directory.GetFiles(pathToMapsFolder, "*.osu", SearchOption.AllDirectories);
 
@@ -32,12 +39,13 @@ namespace MiSideMania
                 var data = BeatmapDecoder.Decode(osuFile);
                 var audioFile = dir + @"\" + data.GeneralSection.AudioFilename;
 
+                if (data.GeneralSection.Mode != OsuParsers.Enums.Ruleset.Mania)
+                    continue;
+
                 // Raw data
                 var index = musics.Count;
                 var rawColor = data.ColoursSection.ComboColours.FirstOrDefault();
-                var color = rawColor != default ? (Color)new Color32(rawColor.R, rawColor.G, rawColor.B, rawColor.A) : musics[Random.Range(0, musics.Count)].colorMusic;
-                var beatLengths = data.TimingPoints.Where(x => x.BeatLength > 0).ToArray();
-                var speed = (beatLengths.Sum(x => 60000.0 / x.BeatLength) / beatLengths.Length) / 120.0; // 120 BPM = 1.0x speed
+                var color = rawColor != default ? (Color)new Color32(rawColor.R, rawColor.G, rawColor.B, rawColor.A) : new Color(Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f));
 
                 // Debug
                 MelonLogger.Msg($"index: {index}");
@@ -47,19 +55,16 @@ namespace MiSideMania
                 MelonLogger.Msg($"length: {data.GeneralSection.Length / 1000f}s");
                 MelonLogger.Msg($"notes: {data.HitObjects.Count}");
                 MelonLogger.Msg($"color: {color}");
-                MelonLogger.Msg($"speed: {speed}");
 
                 // New data
                 var music_data = new Location7_GameDance_Music();
                 var notes = new List<Location7_GameDance_Music_Note>();
-                var animNoteMita = new AnimationCurve();
-                var animNotePlayer = new AnimationCurve();
 
                 // Populate Notes
                 foreach (var note in data.HitObjects)
                 {
                     var time = (float)note.StartTimeSpan.TotalSeconds;
-                    if (time > 0f)
+                    if (time > 1f)
                         notes.Add(new Location7_GameDance_Music_Note() { time = time, side = (note as ManiaNote)!.GetColumn(3) });
                 }
 
@@ -69,25 +74,14 @@ namespace MiSideMania
                 music_data.colorMusic = color;
                 music_data.particleMenu = musics[Random.Range(0, musics.Count)].particleMenu;
                 music_data.indexText = musics[0].indexText;
-                music_data.music = music_data.musicLoop = AudioImportLib.API.LoadAudioClip(audioFile);
+                music_data.music = music_data.musicLoop = AudioImportLib.API.LoadAudioClip(audioFile, false);
+                music_data.music.name = data.MetadataSection.Title;
                 music_data.jumpSlow = 0.5f;
-                music_data.addTimeForMita = 0.2f * ((float)speed * 2f);
-                music_data.minusTimeClick = -0.2f * ((float)speed * 2f);
+                music_data.addTimeForMita = 0.2f;
+                music_data.minusTimeClick = -0.2f;
                 music_data.speedAnimationMita = 1.0f;
-
-                // Set note animations
-                animNoteMita.AddKey(game.music[0].animationNoteMita.GetKey(0));
-                Keyframe animNoteMitaKey = game.music[0].animationNoteMita.GetKey(1);
-                animNoteMitaKey.time = 1f / (float)speed;
-                animNoteMita.AddKey(animNoteMitaKey);
-
-                animNotePlayer.AddKey(game.music[0].animationNotePlayer.GetKey(0));
-                Keyframe animNotePlayerKey = game.music[0].animationNotePlayer.GetKey(1);
-                animNotePlayerKey.time = 1f / (float)speed;
-                animNotePlayer.AddKey(animNotePlayerKey);
-
-                music_data.animationNoteMita = animNoteMita;
-                music_data.animationNotePlayer = animNotePlayer;
+                music_data.animationNoteMita = musics[0].animationNoteMita;
+                music_data.animationNotePlayer = musics[0].animationNotePlayer;
 
                 // Add to game musics list
                 musics.Add(music_data);
@@ -95,6 +89,41 @@ namespace MiSideMania
 
             // Set new musics list
             game.music = musics.ToArray();
+
+            game.gameObject.AddComponent<GameDanceSetup>();
+        }
+
+        public void Awake()
+        {
+            game = GetComponent<Location7_GameDance>();
+
+            game.transform.GetComponentsInChildren<Text>(true).First(x => x.name == "Score").horizontalOverflow = HorizontalWrapMode.Overflow;
+            gameName = transform.GetComponentsInChildren<Text>(true).First(x => x.name == "NameMusic");
+
+            customName = Instantiate(gameName, gameName.transform.parent);
+            customName.fontSize = 50;
+
+            var rect = customName.GetComponent<RectTransform>();
+            rect.localEulerAngles = Vector3.zero;
+            rect.offsetMin += new Vector2(100, 0);
+            rect.offsetMax -= new Vector2(100, 0);
+
+            customName.gameObject.SetActive(false);
+        }
+
+        public void Update()
+        {
+            gameName.enabled = game.musicIndexPlay < 3;
+            if (game.musicIndexPlay > 2)
+            {
+                customName.gameObject.SetActive(true);
+                customName.text = game.music[game.musicIndexPlay].music.name;
+                customName.color = game.music[game.musicIndexPlay].colorMusic;
+            }
+            else
+            {
+                customName.gameObject.SetActive(false);
+            }
         }
     }
 }
