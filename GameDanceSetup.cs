@@ -57,14 +57,18 @@ namespace MiSideMania
 
                 // Populate Notes
                 foreach (var note in data.HitObjects)
-                    notes.Add(new Location7_GameDance_Music_Note() { time = (float)note.StartTimeSpan.TotalSeconds, side = (note as ManiaNote)!.GetColumn(3) });
+                {
+                    var time = (float)note.StartTimeSpan.TotalSeconds;
+                    if (time > 0f)
+                        notes.Add(new Location7_GameDance_Music_Note() { time = time, side = (note as ManiaNote)!.GetColumn(3) });
+                }
 
                 // Set data
                 music_data.notes = notes.ToArray();
                 music_data.soundTapNo = musics[0].soundTapNo;
                 music_data.colorMusic = color;
                 music_data.particleMenu = musics[Random.Range(0, musics.Count)].particleMenu;
-                music_data.indexText = 0;
+                music_data.indexText = musics[0].indexText;
                 music_data.music = music_data.musicLoop = AudioImportLib.API.LoadAudioClip(audioFile);
                 music_data.jumpSlow = 0.5f;
                 music_data.addTimeForMita = 0.2f * ((float)speed * 2f);
