@@ -1,7 +1,5 @@
 using Il2Cpp;
-using Il2CppInterop.Runtime.Injection;
 using MelonLoader;
-using System.Diagnostics;
 using System.IO;
 using UnityEngine;
 

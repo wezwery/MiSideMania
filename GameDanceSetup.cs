@@ -13,12 +13,15 @@ namespace MiSideMania
 {
     public class GameDanceSetup : MonoBehaviour
     {
-        private Text gameName = null!, customName = null!;
-        private Location7_GameDance game = null!;
+        private const float FLASH_STRENGTH_T = 0.1f;
 
         public static void Setup(string pathToMapsFolder, Location7_GameDance game)
         {
             ClassInjector.RegisterTypeInIl2Cpp<GameDanceSetup>();
+
+            // Decrease flashes
+            for (int i = 0; i < 3; i++)
+                game.colorDanceSide[i] = Color.Lerp(game.colorDance, game.colorDanceSide[i], FLASH_STRENGTH_T);
 
             // All .osu files
             var files = Directory.GetFiles(pathToMapsFolder, "*.osu", SearchOption.AllDirectories);
@@ -92,6 +95,9 @@ namespace MiSideMania
 
             game.gameObject.AddComponent<GameDanceSetup>();
         }
+
+        private Text gameName = null!, customName = null!;
+        private Location7_GameDance game = null!;
 
         public void Awake()
         {
