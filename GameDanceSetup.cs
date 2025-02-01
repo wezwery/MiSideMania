@@ -14,6 +14,7 @@ namespace MiSideMania
     public class GameDanceSetup : MonoBehaviour
     {
         private const float FLASH_STRENGTH_T = 0.1f;
+        private const float MIN_SECONDS_BETWEEN_NOTES = 0.1f;
 
         public static void Setup(string pathToMapsFolder, Location7_GameDance game)
         {
@@ -63,12 +64,16 @@ namespace MiSideMania
                 var music_data = new Location7_GameDance_Music();
                 var notes = new List<Location7_GameDance_Music_Note>();
 
-                // Populate Notes
-                foreach (var note in data.HitObjects)
+                // Populate notes
+                float prevTime = 0f;
+                foreach (var note in data.HitObjects.OrderBy(x => x.StartTimeSpan.TotalSeconds))
                 {
                     var time = (float)note.StartTimeSpan.TotalSeconds;
-                    if (time > 1f)
+                    if (time > 1f && Mathf.Abs(prevTime - time) >= MIN_SECONDS_BETWEEN_NOTES)
+                    {
                         notes.Add(new Location7_GameDance_Music_Note() { time = time, side = (note as ManiaNote)!.GetColumn(3) });
+                        prevTime = time;
+                    }
                 }
 
                 // Set data
