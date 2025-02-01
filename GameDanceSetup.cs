@@ -49,7 +49,7 @@ namespace MiSideMania
                 // Raw data
                 var index = musics.Count;
                 var rawColor = data.ColoursSection.ComboColours.FirstOrDefault();
-                var color = rawColor != default ? (Color)new Color32(rawColor.R, rawColor.G, rawColor.B, rawColor.A) : new Color(Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f));
+                var color = rawColor != default ? (Color)new Color32(rawColor.R, rawColor.G, rawColor.B, rawColor.A) : new Color(Random.Range(0f, 0.75f), Random.Range(0f, 0.75f), Random.Range(0f, 0.75f));
 
                 // Debug
                 MelonLogger.Msg($"index: {index}");
