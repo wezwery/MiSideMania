@@ -83,7 +83,8 @@ namespace MiSideMania
                 music_data.particleMenu = musics[Random.Range(0, musics.Count)].particleMenu;
                 music_data.indexText = musics[0].indexText;
                 music_data.music = music_data.musicLoop = AudioImportLib.API.LoadAudioClip(audioFile, false);
-                music_data.music.name = data.MetadataSection.Title;
+                music_data.music.name = data.MetadataSection.Title + "\n"
+                    + $"[ {System.TimeSpan.FromMilliseconds(data.GeneralSection.Length):mm\\:ss} ] [ {data.MetadataSection.Version} ]";
                 music_data.jumpSlow = 0.5f;
                 music_data.addTimeForMita = 0.2f;
                 music_data.minusTimeClick = -0.2f;
